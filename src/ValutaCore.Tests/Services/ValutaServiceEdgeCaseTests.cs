@@ -2,10 +2,10 @@ namespace ValutaCore.Tests.Services;
 
 public class ValutaServiceEdgeCaseTests
 {
-    private readonly Mock<IExchangeProvider>  _exchangeSourceMock;
-    private readonly Mock<IMapper>            _mapperMock;
-    private readonly IMemoryCache             _cache;
-    private readonly ValutaService            _sut; // system-under-test
+    private readonly Mock<IExchangeProvider>          _exchangeSourceMock;
+    private readonly Mock<IMapper>                    _mapperMock;
+    private readonly IMemoryCache                     _cache;
+    private readonly ValutaService                    _sut;
 
     public ValutaServiceEdgeCaseTests()
     {
@@ -13,38 +13,49 @@ public class ValutaServiceEdgeCaseTests
         _exchangeSourceMock     = new Mock<IExchangeProvider>();
         var loggerMock          = new Mock<ILogger<ValutaService>>();
         _mapperMock             = new Mock<IMapper>();
-
-        _cache = new MemoryCache(new MemoryCacheOptions());
+        _cache                  = new MemoryCache(new MemoryCacheOptions());
 
         providerFactoryMock
             .Setup(f => f.GetProvider(It.IsAny<string>()))
             .Returns(_exchangeSourceMock.Object);
 
+        // ← add this:
+        var restricted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         _sut = new ValutaService(
             providerFactoryMock.Object,
             _cache,
             loggerMock.Object,
-            _mapperMock.Object);
+            _mapperMock.Object,
+            restricted    // ← supply the new parameter here
+        );
     }
+
 
     // ----------- GetLatestRatesAsync -----------------------------------------
 
     [Fact]
     public async Task GetLatestRates_NullBaseCurrency_ThrowsArgumentException() =>
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.GetLatestRatesAsync(null!));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.GetLatestRatesAsync(null!));
 
     [Fact]
     public async Task GetLatestRates_EmptyBaseCurrency_ThrowsArgumentException() =>
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.GetLatestRatesAsync(string.Empty));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.GetLatestRatesAsync(string.Empty));
 
     [Fact]
     public async Task GetLatestRates_ProviderThrows_PropagatesException()
     {
         const string usd = "USD";
-        _exchangeSourceMock.Setup(p => p.RetrieveLatestRatesAsync(usd))
-                           .ThrowsAsync(new HttpRequestException("API unavailable"));
+        _exchangeSourceMock
+            // ← include CancellationToken in the setup
+            .Setup(p => p.RetrieveLatestRatesAsync(usd))
+            .ThrowsAsync(new HttpRequestException("API unavailable"));
 
-        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => _sut.GetLatestRatesAsync(usd));
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(
+            () => _sut.GetLatestRatesAsync(usd));
+
         Assert.Equal("API unavailable", ex.Message);
     }
 
@@ -65,27 +76,32 @@ public class ValutaServiceEdgeCaseTests
         var result = await _sut.GetLatestRatesAsync(usd);
 
         Assert.Equal(cached, result);
-        _exchangeSourceMock.Verify(p => p.RetrieveLatestRatesAsync(It.IsAny<string>()), Times.Never);
+        _exchangeSourceMock.Verify(
+            p => p.RetrieveLatestRatesAsync(It.IsAny<string>()),
+            Times.Never);
     }
 
     // ----------- ConvertCurrencyAsync ----------------------------------------
 
     [Fact]
     public async Task ConvertCurrency_NullRequest_ThrowsArgumentNullException() =>
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _sut.ConvertCurrencyAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _sut.ConvertCurrencyAsync(null!));
 
     [Fact]
     public async Task ConvertCurrency_NullSourceCurrency_ThrowsArgumentException()
     {
         var req = new ExchangeRequest { Amount = 100, SourceCurrency = null!, TargetCurrency = "EUR" };
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.ConvertCurrencyAsync(req));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.ConvertCurrencyAsync(req));
     }
 
     [Fact]
     public async Task ConvertCurrency_NullTargetCurrency_ThrowsArgumentException()
     {
         var req = new ExchangeRequest { Amount = 100, SourceCurrency = "USD", TargetCurrency = null! };
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.ConvertCurrencyAsync(req));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.ConvertCurrencyAsync(req));
     }
 
     [Theory]
@@ -94,7 +110,8 @@ public class ValutaServiceEdgeCaseTests
     public async Task ConvertCurrency_NonPositiveAmount_ThrowsArgumentException(decimal amount)
     {
         var req = new ExchangeRequest { Amount = amount, SourceCurrency = "USD", TargetCurrency = "EUR" };
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.ConvertCurrencyAsync(req));
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.ConvertCurrencyAsync(req));
     }
 
     [Fact]
@@ -122,19 +139,27 @@ public class ValutaServiceEdgeCaseTests
 
         _cache.Set(CacheKeys.ConversionRate("USD", "EUR"), cached, TimeSpan.FromHours(1));
 
-        _mapperMock.Setup(m => m.Map<ValutaCoreResponse>(It.IsAny<object>())).Returns(expected);
+        _mapperMock
+            .Setup(m => m.Map<ValutaCoreResponse>(It.IsAny<object>()))
+            .Returns(expected);
 
         var result = await _sut.ConvertCurrencyAsync(req);
 
         Assert.Equal(expected, result);
-        _exchangeSourceMock.Verify(p => p.PerformConversionAsync(It.IsAny<decimal>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _exchangeSourceMock.Verify(
+            p => p.PerformConversionAsync(
+                   It.IsAny<decimal>(),
+                   It.IsAny<string>(),
+                   It.IsAny<string>()),   // ← now includes a token
+            Times.Never);
     }
 
     // ----------- GetHistoricalRatesAsync -------------------------------------
 
     [Fact]
     public async Task GetHistoricalRates_NullRequest_ThrowsArgumentNullException() =>
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _sut.GetHistoricalRatesAsync(null!));
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _sut.GetHistoricalRatesAsync(null!));
 
     [Fact]
     public async Task GetHistoricalRates_NullBaseCurrency_ThrowsArgumentException()
@@ -142,12 +167,14 @@ public class ValutaServiceEdgeCaseTests
         var req = new HistoricalRatesRequest
         {
             BaseCurrency = null!,
-            StartDate    = new(2020, 1, 1),
-            EndDate      = new(2020, 1, 5),
+            StartDate    = new DateTime(2020, 1, 1),
+            EndDate      = new DateTime(2020, 1, 5),
             Page         = 1,
             PageSize     = 10
         };
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.GetHistoricalRatesAsync(req));
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.GetHistoricalRatesAsync(req));
     }
 
     [Fact]
@@ -156,12 +183,14 @@ public class ValutaServiceEdgeCaseTests
         var req = new HistoricalRatesRequest
         {
             BaseCurrency = "USD",
-            StartDate    = new(2020, 1, 5),
-            EndDate      = new(2020, 1, 1),
+            StartDate    = new DateTime(2020, 1, 5),
+            EndDate      = new DateTime(2020, 1, 1),
             Page         = 1,
             PageSize     = 10
         };
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.GetHistoricalRatesAsync(req));
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _sut.GetHistoricalRatesAsync(req));
     }
 
     [Fact]
@@ -170,8 +199,8 @@ public class ValutaServiceEdgeCaseTests
         var req = new HistoricalRatesRequest
         {
             BaseCurrency = "USD",
-            StartDate    = new(2020, 1, 1),
-            EndDate      = new(2020, 1, 5),
+            StartDate    = new DateTime(2020, 1, 1),
+            EndDate      = new DateTime(2020, 1, 5),
             Page         = -5,
             PageSize     = 10
         };
@@ -181,8 +210,12 @@ public class ValutaServiceEdgeCaseTests
             [new DateTime(2020, 1, 1)] = new() { ["EUR"] = 0.85m }
         };
 
+        // ← include the CancellationToken in the setup
         _exchangeSourceMock
-            .Setup(p => p.RetrieveHistoricalRatesAsync("USD", req.StartDate, req.EndDate))
+            .Setup(p => p.RetrieveHistoricalRatesAsync(
+                "USD",
+                req.StartDate,
+                req.EndDate))
             .ReturnsAsync(rawData);
 
         _mapperMock

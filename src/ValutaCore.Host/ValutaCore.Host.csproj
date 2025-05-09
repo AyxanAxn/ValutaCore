@@ -30,5 +30,18 @@
         <ProjectReference Include="..\ValutaCore.Infrastructure\ValutaCore.Infrastructure.csproj" />
     </ItemGroup>
 
-    <!-- the appsettings / launchSettings items stay exactly as you already have them -->
+    <ItemGroup>
+        <Content Include="appsettings.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        <Content Include="appsettings.Development.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Properties\launchSettings.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>
