@@ -1,0 +1,10 @@
+﻿global using Microsoft.Extensions.DependencyInjection;
+global using ValutaCore.Core.Models.Currency;
+global using Microsoft.Extensions.Caching.Memory;
+global using ValutaCore.Core.Interfaces;
+global using ValutaCore.Core.Utilities;
+global using ValutaCore.Core.Services;
+global using System.Text.Json.Serialization;
+global using Microsoft.Extensions.Logging;
+global using System.Reflection;
+global using MapsterMapper;

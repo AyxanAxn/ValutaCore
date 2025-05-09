@@ -1,0 +1,39 @@
+name: Simple CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Test with coverage
+      run: dotnet test --no-build --configuration Release --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+      
+    - name: Generate code coverage report
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool && reportgenerator -reports:"**/coverage.opencover.xml" -targetdir:"coveragereport" -reporttypes:Html
+      
+    - name: Build and push Docker image
+      if: github.event_name != 'pull_request'
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: false
+        tags: currency-converter:latest
