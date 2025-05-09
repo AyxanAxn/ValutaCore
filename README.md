@@ -52,7 +52,6 @@ bash
 Copy
 Edit
 dotnet test
-Controllers are unit-tested with Moq + xUnit
 
 Application handlers are tested in isolation (mocks only)
 
