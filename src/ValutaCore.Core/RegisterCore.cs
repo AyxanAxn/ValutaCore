@@ -6,7 +6,7 @@ public static class RegisterCore
 {
     public static IServiceCollection AddCoreServices(this IServiceCollection services)
     {
-        services.AddScoped<ICurrencyService, ValutaService>();
+        services.AddScoped<IValutaService, ValutaService>();
         services.AddMapster();
         return services;
     }

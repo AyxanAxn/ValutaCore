@@ -2,7 +2,7 @@ using ValutaCore.Core.Models.Currency;
 
 namespace ValutaCore.Core.Interfaces;
 
-public interface ICurrencyService
+public interface IValutaService
 {
     Task<ExchangeRateResponse> GetLatestRatesAsync(string baseCurrency);
     Task<ValutaCoreResponse> ConvertCurrencyAsync(ExchangeRequest request);

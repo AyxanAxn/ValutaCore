@@ -1,10 +1,14 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using FluentValidation;
+using MediatR;
+using Microsoft.AspNetCore.Builder;
 using ValutaCore.Infrastructure;
 using ValutaCore.Api.Middleware;
 using ValutaCore.Core;
 using Serilog.Events;
 using ValutaCore.Api;
 using Serilog;
+using ValutaCore.Application;
+
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -22,7 +26,10 @@ builder.Host.UseSerilog();                 // keep default providers so hosting 
 builder.Services
     .AddCoreServices()
     .AddInfrastructureServices(builder.Configuration)
-    .AddApiServices(builder.Configuration);
+    .AddApiServices(builder.Configuration)
+    // MediatR 11.x style: pass the assembly directly
+    .AddMediatR(typeof(AssemblyMarker).Assembly)
+    .AddValidatorsFromAssemblyContaining<AssemblyMarker>();
 
 var app = builder.Build();
 

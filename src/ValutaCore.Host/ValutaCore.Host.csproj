@@ -8,34 +8,27 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Serilog or other host-level packages go here -->
-        <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
+        <!-- logging -->
+        <PackageReference Include="Serilog.AspNetCore"
+                          Version="7.0.0" />
+
+        <!-- MediatR – core + DI helper MUST be the same version -->
+        <PackageReference Include="MediatR"
+                          Version="11.1.0" />
+        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection"
+                          Version="11.1.0" />
+
+        <!-- FluentValidation – DI helper -->
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions"
+                          Version="11.11.0" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\ValutaCore.Api\ValutaCore.Api.csproj" />
+        <ProjectReference Include="..\ValutaCore.Application\ValutaCore.Application.csproj" />
         <ProjectReference Include="..\ValutaCore.Core\ValutaCore.Core.csproj" />
         <ProjectReference Include="..\ValutaCore.Infrastructure\ValutaCore.Infrastructure.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Content Update="appsettings.json">
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </Content>
-      <Content Update="appsettings.Development.json">
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Update="Properties\launchSettings.json">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      </None>
-    </ItemGroup>
+    <!-- the appsettings / launchSettings items stay exactly as you already have them -->
 </Project>

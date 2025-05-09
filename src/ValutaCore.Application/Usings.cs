@@ -1,0 +1,11 @@
+global using ValutaCore.Application.Currency.DTOs;
+global using ValutaCore.Infrastructure.Security;
+global using ValutaCore.Application.Auth.DTOs;
+global using ValutaCore.Core.Models.Currency;
+global using System.Security.Authentication;
+global using ValutaCore.Core.Configuration; 
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
+global using ValutaCore.Core.Interfaces;
+global using System.Diagnostics;
+global using MediatR;

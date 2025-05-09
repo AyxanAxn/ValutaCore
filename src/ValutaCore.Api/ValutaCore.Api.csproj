@@ -24,10 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="Models\"/>
-    </ItemGroup>
-
-    <ItemGroup>
+        <ProjectReference Include="..\ValutaCore.Application\ValutaCore.Application.csproj" />
         <ProjectReference Include="..\ValutaCore.Core\ValutaCore.Core.csproj"/>
         <ProjectReference Include="..\ValutaCore.Infrastructure\ValutaCore.Infrastructure.csproj" />
         <!--    <ProjectReference Include="..\ValutaCore.Host\ValutaCore.Host.csproj" />-->

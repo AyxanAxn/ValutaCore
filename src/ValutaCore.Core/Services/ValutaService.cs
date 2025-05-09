@@ -5,7 +5,7 @@ public class ValutaService(
     IMemoryCache cache,
     ILogger<ValutaService> logger,
     IMapper mapper)
-    : ICurrencyService
+    : IValutaService
 {
     private readonly IExchangeProviderFactory _providerFactory =
         providerFactory ?? throw new ArgumentNullException(nameof(providerFactory));
@@ -88,8 +88,9 @@ public class ValutaService(
         {
             _logger.LogInformation("Cache miss for conversion from {SourceCurrency} to {TargetCurrency}",
                 request.SourceCurrency, request.TargetCurrency);
-
-            conversionData = await provider.PerformConversionAsync(1, request.SourceCurrency, request.TargetCurrency);
+            var sourceCurrency = request.SourceCurrency.ToUpperInvariant();
+            var targetCurrency = request.TargetCurrency.ToUpperInvariant();
+            conversionData = await provider.PerformConversionAsync(1, sourceCurrency, targetCurrency);
 
             _cache.Set(cacheKey, conversionData, TimeSpan.FromHours(1));
         }

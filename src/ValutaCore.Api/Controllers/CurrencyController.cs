@@ -4,22 +4,21 @@ namespace ValutaCore.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Authorize]
-public class CurrencyController(ICurrencyService currencyService) : ControllerBase
+public class CurrencyController(ISender mediator) : ControllerBase
 {
-    private readonly ICurrencyService _currencyService =
-        currencyService ?? throw new ArgumentNullException(nameof(currencyService));
-
+    // GET /api/v1/currency/rates?baseCurrency=USD
     [HttpGet("rates")]
     [Authorize(Roles = "User,Admin")]
-    public async Task<IActionResult> GetLatestRates([Required][FromQuery] string baseCurrency)
+    public async Task<IActionResult> GetLatestRates(
+        [Required][FromQuery] string baseCurrency)
     {
-        if (string.IsNullOrEmpty(baseCurrency))
-            return BadRequest("Base currency is required");
+        var result = await mediator.Send(
+            new GetLatestRatesQuery(baseCurrency));
 
-        var rates = await _currencyService.GetLatestRatesAsync(baseCurrency);
-        return Ok(rates);
+        return Ok(result);              // IEnumerable<RateDto>
     }
 
+    // GET /api/v1/currency/convert?value=100&sourceCurrency=USD&targetCurrency=EUR
     [HttpGet("convert")]
     [Authorize(Roles = "User,Admin")]
     public async Task<IActionResult> ConvertCurrency(
@@ -27,51 +26,25 @@ public class CurrencyController(ICurrencyService currencyService) : ControllerBa
         [Required][FromQuery] string sourceCurrency,
         [Required][FromQuery] string targetCurrency)
     {
-        if (value <= 0)
-            return BadRequest("Amount must be greater than zero");
+        var result = await mediator.Send(
+            new ConvertCurrencyQuery(value, sourceCurrency, targetCurrency));
 
-        if (string.IsNullOrEmpty(sourceCurrency) || string.IsNullOrEmpty(targetCurrency))
-            return BadRequest("Source and target currencies must be specified");
-
-        var request = new ExchangeRequest
-        {
-            Amount = value,
-            SourceCurrency = sourceCurrency,
-            TargetCurrency = targetCurrency
-        };
-
-        var conversion = await _currencyService.ConvertCurrencyAsync(request);
-        return Ok(conversion);
+        return Ok(result);              // ConversionDto
     }
 
+    // GET /api/v1/currency/historical?baseCurrency=USD&startDate=2024-01-01...
     [HttpGet("historical")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetHistoricalRates(
-        [Required][FromQuery] string baseCurrency,
+        [Required][FromQuery] string   baseCurrency,
         [Required][FromQuery] DateTime startDate,
         [Required][FromQuery] DateTime endDate,
-        [FromQuery] int page = 1,
+        [FromQuery] int page     = 1,
         [FromQuery] int pageSize = 10)
     {
-        if (string.IsNullOrEmpty(baseCurrency))
-            return BadRequest("Base currency is required");
+        var result = await mediator.Send(
+            new GetHistoricalRatesQuery(baseCurrency, startDate, endDate, page, pageSize));
 
-        if (startDate > endDate)
-            return BadRequest("Start date must be before or equal to end date");
-
-        page = page < 1 ? 1 : page;
-        pageSize = pageSize < 1 ? 10 : pageSize;
-
-        var request = new HistoricalRatesRequest
-        {
-            BaseCurrency = baseCurrency,
-            StartDate = startDate,
-            EndDate = endDate,
-            Page = page,
-            PageSize = pageSize
-        };
-
-        var history = await _currencyService.GetHistoricalRatesAsync(request);
-        return Ok(history);
+        return Ok(result);              // IEnumerable<HistoricalRateDto>
     }
 }

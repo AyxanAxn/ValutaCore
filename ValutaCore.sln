@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValutaCore.IntegrationTests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValutaCore.Host", "src\ValutaCore.Host\ValutaCore.Host.csproj", "{E96F8E8B-E20B-4A5D-ACA9-AD26B12BD133}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValutaCore.Application", "src\ValutaCore.Application\ValutaCore.Application.csproj", "{67856244-2FB6-49AD-8B2B-9C546E30B082}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +54,10 @@ Global
 		{E96F8E8B-E20B-4A5D-ACA9-AD26B12BD133}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E96F8E8B-E20B-4A5D-ACA9-AD26B12BD133}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E96F8E8B-E20B-4A5D-ACA9-AD26B12BD133}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67856244-2FB6-49AD-8B2B-9C546E30B082}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67856244-2FB6-49AD-8B2B-9C546E30B082}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67856244-2FB6-49AD-8B2B-9C546E30B082}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67856244-2FB6-49AD-8B2B-9C546E30B082}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -63,6 +69,7 @@ Global
 		{1F8C09B0-E566-48C4-A762-6B49F0DF0B3E} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{F99287F0-4A89-4965-9AB1-E00347916229} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{E96F8E8B-E20B-4A5D-ACA9-AD26B12BD133} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{67856244-2FB6-49AD-8B2B-9C546E30B082} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4DDF909B-572B-4F24-A030-9B4E8D9E479D}

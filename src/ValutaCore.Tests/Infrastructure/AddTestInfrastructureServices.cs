@@ -14,6 +14,7 @@ namespace ValutaCore.Tests.Infrastructure
             // Auth & provider factories
             services.AddSingleton<IJwtTokenService, JwtTokenService>();
             services.AddSingleton<IExchangeProviderFactory, ExchangeProviderFactory>();
+            services.AddScoped<IValutaService, ValutaService>();
 
             // Primary exchange-rate provider (without HttpClient factory)
             services.AddTransient<FrankfurterApiProvider>();

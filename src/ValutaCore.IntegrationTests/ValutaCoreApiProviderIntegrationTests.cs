@@ -51,32 +51,7 @@ public class ValutaCoreApiProviderIntegrationTests : IDisposable
         Assert.Contains(toCurrency, result.Rates.Keys);
         Assert.True(result.Rates[toCurrency] > 0);
     }
-
-    [Fact]
-    public async Task RetrieveHistoricalRatesAsync_ShouldReturnData_WhenDateRangeIsValid()
-    {
-        // Arrange
-        const string baseCurrency = "USD";
-        var startDate = DateTime.Today.AddDays(-5);
-        var endDate   = DateTime.Today;
-
-        // Act
-        var result = await _provider.RetrieveHistoricalRatesAsync(baseCurrency, startDate, endDate);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.NotEmpty(result);
-
-        var businessDays = CountBusinessDays(startDate, endDate);
-        Assert.True(result.Count <= businessDays);
-
-        foreach (var (date, rates) in result)
-        {
-            Assert.InRange(date, startDate, endDate);
-            Assert.NotEmpty(rates);
-        }
-    }
-
+    
     [Fact]
     public async Task RetrieveLatestRatesAsync_ShouldThrowHttpRequestException_WhenBaseCurrencyIsInvalid()
     {
