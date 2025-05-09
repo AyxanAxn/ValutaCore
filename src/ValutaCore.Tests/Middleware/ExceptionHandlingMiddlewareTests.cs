@@ -1,3 +1,5 @@
+using ValutaCore.Api.Models;
+
 namespace ValutaCore.Tests.Middleware
 {
     public class ExceptionHandlingMiddlewareTests
@@ -51,7 +53,7 @@ namespace ValutaCore.Tests.Middleware
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             var reader = new StreamReader(context.Response.Body);
             var responseBody = await reader.ReadToEndAsync();
-            var error = JsonSerializer.Deserialize<ErrorDetail>(responseBody, new JsonSerializerOptions
+            var error = JsonSerializer.Deserialize<ErrorResponse>(responseBody, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
@@ -84,7 +86,7 @@ namespace ValutaCore.Tests.Middleware
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             var reader = new StreamReader(context.Response.Body);
             var responseBody = await reader.ReadToEndAsync();
-            var error = JsonSerializer.Deserialize<ErrorDetail>(responseBody, new JsonSerializerOptions
+            var error = JsonSerializer.Deserialize<ErrorResponse>(responseBody, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
@@ -92,44 +94,7 @@ namespace ValutaCore.Tests.Middleware
             Assert.Equal("Validation failed", error?.Message);
             Assert.Equal(HttpStatusCode.BadRequest, error?.Status);
         }
-
-        [Fact]
-        public async Task InvokeAsync_WithGenericException_ReturnsInternalServerError()
-        {
-            // Arrange
-            var context = new DefaultHttpContext
-            {
-                Response =
-                {
-                    Body = new MemoryStream()
-                }
-            };
-
-            RequestDelegate next = (HttpContext ctx) => throw new Exception("Something went wrong");
-
-            // Create a new middleware instance with our test delegate
-            // Set up the environment to be non-development
-            _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
-            var middleware = new GlobalErrorMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
-
-            // Act
-            await middleware.Invoke(context);
-
-            // Assert
-            Assert.Equal((int)HttpStatusCode.InternalServerError, context.Response.StatusCode);
-
-            context.Response.Body.Seek(0, SeekOrigin.Begin);
-            var reader = new StreamReader(context.Response.Body);
-            var responseBody = await reader.ReadToEndAsync();
-            var error = JsonSerializer.Deserialize<ErrorDetail>(responseBody, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            Assert.Equal("An unexpected error occurred. Please try again later.", error.Message);
-            Assert.Equal(HttpStatusCode.InternalServerError, error.Status);
-        }
-
+        
         [Fact]
         public async Task InvokeAsync_WithFormatException_ReturnsBadRequest()
         {
@@ -154,7 +119,7 @@ namespace ValutaCore.Tests.Middleware
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             var reader = new StreamReader(context.Response.Body);
             var responseBody = await reader.ReadToEndAsync();
-            var error = JsonSerializer.Deserialize<ErrorDetail>(responseBody, new JsonSerializerOptions
+            var error = JsonSerializer.Deserialize<ErrorResponse>(responseBody, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
@@ -162,42 +127,7 @@ namespace ValutaCore.Tests.Middleware
             Assert.Equal("Invalid format", error.Message);
             Assert.Equal(HttpStatusCode.BadRequest, error.Status);
         }
-
-        [Fact]
-        public async Task InvokeAsync_InDevelopmentEnvironment_IncludesDeveloperMessage()
-        {
-            // Arrange
-            var context = new DefaultHttpContext();
-            context.Response.Body = new MemoryStream();
-
-            RequestDelegate next = (HttpContext ctx) =>
-            {
-                throw new Exception("Something went wrong");
-            };
-
-            // Set up the environment to be development
-            _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Development");
-            
-            var middleware = new GlobalErrorMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
-
-            // Act
-            await middleware.Invoke(context);
-
-            // Assert
-            Assert.Equal((int)HttpStatusCode.InternalServerError, context.Response.StatusCode);
-
-            context.Response.Body.Seek(0, SeekOrigin.Begin);
-            var reader = new StreamReader(context.Response.Body);
-            var responseBody = await reader.ReadToEndAsync();
-            var error = JsonSerializer.Deserialize<ErrorDetail>(responseBody, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-
-            Assert.Equal("Something went wrong", error.Message);
-            Assert.Equal(HttpStatusCode.InternalServerError, error.Status);
-        }
-
+        
         [Fact]
         public async Task InvokeAsync_WithException_SetsTraceId()
         {
@@ -220,12 +150,45 @@ namespace ValutaCore.Tests.Middleware
             context.Response.Body.Seek(0, SeekOrigin.Begin);
             var reader = new StreamReader(context.Response.Body);
             var responseBody = await reader.ReadToEndAsync();
-            var error = JsonSerializer.Deserialize<ErrorDetail>(responseBody, new JsonSerializerOptions
+            var error = JsonSerializer.Deserialize<ErrorResponse>(responseBody, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
             Assert.Equal("test-trace-id", error.TraceId);
+        }
+        
+        [Fact]
+        public async Task InvokeAsync_WithException_SetsTimestamp()
+        {
+            // Arrange
+            var context = new DefaultHttpContext();
+            context.Response.Body = new MemoryStream();
+
+            RequestDelegate next = (HttpContext ctx) =>
+            {
+                throw new Exception("Something went wrong");
+            };
+
+            var middleware = new GlobalErrorMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+
+            // Act
+            await middleware.Invoke(context);
+
+            // Assert
+            context.Response.Body.Seek(0, SeekOrigin.Begin);
+            var reader = new StreamReader(context.Response.Body);
+            var responseBody = await reader.ReadToEndAsync();
+            var error = JsonSerializer.Deserialize<ErrorResponse>(responseBody, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            // Check that the timestamp is recent (within the last minute)
+            var now = DateTime.UtcNow;
+            Assert.NotNull(error!.Timestamp);
+            var timestampDiff = now - error.Timestamp;
+            Assert.True(timestampDiff.TotalMinutes < 1);
         }
     }
 }

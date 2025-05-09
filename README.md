@@ -1,68 +1,99 @@
-# ValutaCore: A Modern Currency Conversion Service
+# Valuta Core API
 
-ValutaCore is a high-performance, secure, and extensible API for currency conversion tasks. Designed with Clean Architecture in C# and ASP.NET Core, it emphasizes maintainability, testability, and resilience.
+Currency conversion & foreign-exchange rates service written in **.NET 9**  
+with **Clean Architecture**, **MediatR**, and **Serilog**.
 
-## Features
+---
 
-- **Latest Exchange Rates**: Fetch the latest exchange rates for a specified base currency
-- **Currency Conversion**: Convert amounts between different currencies with precision
-- **Historical Exchange Rates**: Retrieve paged historical rates over custom date ranges
-- **Resilience & Performance**
-    - In-memory caching to minimize external calls
-    - Retry policies with exponential backoff
-    - Circuit breaker pattern for graceful degradation
-- **Security & Access Control**
-    - JWT authentication
-    - Role-based authorization (User / Admin)
-    - Request throttling to prevent abuse
-- **Logging & Monitoring**
-    - Structured logging via Serilog
-    - Request/response correlation IDs
-    - Health checks and metrics endpoints
+## ✨ Features
+- **JWT authentication** with role-based authorization (`Admin`, `User`)
+- **Latest**, **historical**, and **conversion** endpoints
+- Modular layers  
+  `Host → Api → Application → Core → Infrastructure`
+- OpenAPI / Swagger documentation out of the box
+- Telemetry via OpenTelemetry (`AspNetCore`, `HttpClient`)
+- Fully unit-tested controllers & handlers (MediatR mocked)
 
-## Architecture
+---
 
-ValutaCore follows Clean Architecture with these layers:
+## 📦 Project Structure
+src/
+│
+├─ ValutaCore.Host ← entry point / composition root
+│
+├─ ValutaCore.Api ← controllers, middleware, Swagger
+│
+├─ ValutaCore.Application ← Mediator commands, queries, validators
+│
+├─ ValutaCore.Core ← domain models & abstractions
+│
+└─ ValutaCore.Infrastructure← EF DbContexts, HTTP clients, token service
 
-- **API Layer**: Controllers, middleware, DTOs and Swagger setup
-- **Application Layer**: Use-case orchestration, validation, and mapping
-- **Domain Layer**: Core models, business rules, and custom exceptions
-- **Infrastructure Layer**: HTTP clients, caching, configuration, and persistence
+yaml
+Copy
+Edit
 
-### Why This Architecture?
+---
 
-1. **Separation of Concerns**  
-   Each layer has a single responsibility, simplifying maintenance and onboarding.
-2. **Dependency Rule**  
-   Inner layers (Domain/Application) never depend on outer layers (Infrastructure/API).
-3. **Testability**  
-   Use interfaces and DI to mock external dependencies in unit tests.
-4. **Flexibility**  
-   Swap out rate providers (Frankfurter, Fixer.io, etc.) without touching core logic.
-5. **Scalability**  
-   Add new features (crypto support, alerts) with minimal refactoring.
-6. **Resilience**  
-   Encapsulate retry, circuit-breaker, and fallback policies in Infrastructure.
-7. **Security**  
-   Enforce authentication and authorization at the API boundary.
+## 🚀 Getting Started
 
-### Key Design Patterns
+```bash
+# clone & restore
+git clone https://github.com/your-org/valuta-core.git
+cd valuta-core
+dotnet restore
 
-- **Repository Pattern**: Abstracts data access
-- **Factory Pattern**: Creates the appropriate currency provider
-- **Dependency Injection**: Decouples implementations from interfaces
-- **Options Pattern**: Binds configuration sections to strongly-typed classes
+# run locally (HTTPS 5001)
+dotnet run --project src/ValutaCore.Host
+Open https://localhost:5001/swagger to explore the API.
 
-## Getting Started
+🧪 Tests
+bash
+Copy
+Edit
+dotnet test
+Controllers are unit-tested with Moq + xUnit
 
-### Prerequisites
+Application handlers are tested in isolation (mocks only)
 
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/) or later
-- Docker (optional, for containerized deployment)
+Integration tests spin up the full Host with WebApplicationFactory
 
-### Installation
+⚙️ Configuration
+File	Purpose
+appsettings.json	default settings (Serilog, JWT, external FX API)
+appsettings.Development.json	local overrides
+Properties/launchSettings.json	debug profile (HTTPS 5001 / HTTP 5000)
 
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/yourusername/ValutaCore.git
-   cd ValutaCore
+Set sensitive values (JWT secret, external API key) via environment variables
+or User Secrets.
+
+📈 API Reference
+Method	Route	Roles
+POST	/api/v1/authentication/login	anonymous
+GET	/api/v1/currency/rates?base=USD	User, Admin
+GET	/api/v1/currency/convert?value=100&source=USD&target=EUR	User, Admin
+GET	/api/v1/currency/historical?...	Admin
+
+Full request/response examples are shown in Swagger.
+
+🛠️ Tech Stack
+.NET 9 Preview
+
+MediatR 11
+
+FluentValidation 12
+
+Serilog
+
+OpenTelemetry
+
+Docker (optional containerization)
+
+🤝 Contributing
+Fork & branch from main
+
+Follow the code style (dotnet format)
+
+Write / update tests
+
+PR with a clear description

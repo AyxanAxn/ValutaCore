@@ -7,13 +7,10 @@ public class ValutaService(
     IMapper mapper)
     : IValutaService
 {
-    private readonly IExchangeProviderFactory _providerFactory =
-        providerFactory ?? throw new ArgumentNullException(nameof(providerFactory));
-
+    private readonly IExchangeProviderFactory _providerFactory = providerFactory ?? throw new ArgumentNullException(nameof(providerFactory));
     private readonly IMemoryCache _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     private readonly ILogger<ValutaService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-
     private readonly HashSet<string> _restrictedCurrencies = new(StringComparer.OrdinalIgnoreCase)
     {
         "TRY", "PLN", "THB", "MXN"
@@ -26,6 +23,100 @@ public class ValutaService(
 
     public async Task<ExchangeRateResponse> GetLatestRatesAsync(string baseCurrency)
     {
+        ValidateBaseCurrency(baseCurrency);
+
+        var cacheKey = CacheKeys.LatestRates(baseCurrency);
+        
+        if (_cache.TryGetValue(cacheKey, out ExchangeRateResponse? rates))
+        {
+            _logger.LogDebug("Cache hit: Retrieved latest rates for base currency {BaseCurrency}", baseCurrency);
+            return rates!;
+        }
+
+        _logger.LogInformation("Fetching latest rates for base currency {BaseCurrency}", baseCurrency);
+        
+        var provider = _providerFactory.GetProvider();
+        rates = await provider.RetrieveLatestRatesAsync(baseCurrency);
+        
+        RemoveRestrictedCurrencies(rates.Rates);
+        
+        _cache.Set(cacheKey, rates, TimeSpan.FromHours(1));
+        
+        return rates;
+    }
+
+    public async Task<ValutaCoreResponse> ConvertCurrencyAsync(ExchangeRequest request)
+    {
+        ValidateConversionRequest(request);
+
+        var sourceCurrency = request.SourceCurrency.ToUpperInvariant();
+        var targetCurrency = request.TargetCurrency.ToUpperInvariant();
+        var cacheKey = CacheKeys.ConversionRate(sourceCurrency, targetCurrency);
+
+        if (_cache.TryGetValue(cacheKey, out ExchangeRateResponse conversionData))
+        {
+            _logger.LogDebug("Cache hit: Retrieved conversion rate from {SourceCurrency} to {TargetCurrency}", 
+                sourceCurrency, targetCurrency);
+        }
+        else
+        {
+            _logger.LogInformation("Fetching conversion rate from {SourceCurrency} to {TargetCurrency}", 
+                sourceCurrency, targetCurrency);
+                
+            var provider = _providerFactory.GetProvider();
+            conversionData = await provider.PerformConversionAsync(1, sourceCurrency, targetCurrency);
+            
+            _cache.Set(cacheKey, conversionData, TimeSpan.FromHours(1));
+        }
+
+        return _mapper.Map<ValutaCoreResponse>((
+            Source: conversionData,
+            Amount: request.Amount,
+            FromCurrency: sourceCurrency,
+            ToCurrency: targetCurrency
+        ));
+    }
+
+    public async Task<PaginatedResponse<RateHistoryEntry>> GetHistoricalRatesAsync(HistoricalRatesRequest request)
+    {
+        ValidateHistoricalRequest(request);
+        NormalizeHistoricalRequest(request);
+
+        var cacheKey = CacheKeys.HistoricalRates(
+            request.BaseCurrency,
+            request.StartDate.ToString("yyyy-MM-dd"),
+            request.EndDate.ToString("yyyy-MM-dd"));
+
+        Dictionary<DateTime, Dictionary<string, decimal>> historicalData;
+        
+        if (_cache.TryGetValue(cacheKey, out historicalData!))
+        {
+            _logger.LogDebug("Cache hit: Retrieved historical rates for {BaseCurrency} from {StartDate} to {EndDate}",
+                request.BaseCurrency, request.StartDate.ToString("yyyy-MM-dd"), request.EndDate.ToString("yyyy-MM-dd"));
+        }
+        else
+        {
+            _logger.LogInformation("Fetching historical rates for {BaseCurrency} from {StartDate} to {EndDate}",
+                request.BaseCurrency, request.StartDate.ToString("yyyy-MM-dd"), request.EndDate.ToString("yyyy-MM-dd"));
+                
+            var provider = _providerFactory.GetProvider();
+            historicalData = await provider.RetrieveHistoricalRatesAsync(
+                request.BaseCurrency, request.StartDate, request.EndDate);
+                
+            _cache.Set(cacheKey, historicalData, TimeSpan.FromHours(24));
+        }
+
+        RemoveRestrictedCurrenciesFromHistoricalData(historicalData!);
+        
+        var allRates = ConvertToRateHistoryEntries(historicalData, request.BaseCurrency);
+        
+        return _mapper.Map<PaginatedResponse<RateHistoryEntry>>((Request: request, AllRates: allRates));
+    }
+
+    #region Private Helper Methods
+    
+    private void ValidateBaseCurrency(string baseCurrency)
+    {
         if (string.IsNullOrEmpty(baseCurrency))
         {
             throw new ArgumentException("Base currency cannot be null or empty", nameof(baseCurrency));
@@ -35,31 +126,9 @@ public class ValutaService(
         {
             throw new InvalidOperationException($"Currency {baseCurrency} is restricted and cannot be used");
         }
-
-        var cacheKey = CacheKeys.LatestRates(baseCurrency);
-        if (!_cache.TryGetValue(cacheKey, out ExchangeRateResponse rates))
-        {
-            _logger.LogInformation("Cache miss for latest rates with base currency {BaseCurrencyCode}", baseCurrency);
-
-            var provider = _providerFactory.GetProvider();
-            rates = await provider.RetrieveLatestRatesAsync(baseCurrency);
-
-            foreach (var restrictedCurrency in _restrictedCurrencies)
-            {
-                rates.Rates.Remove(restrictedCurrency);
-            }
-
-            _cache.Set(cacheKey, rates, TimeSpan.FromHours(1));
-        }
-        else
-        {
-            _logger.LogInformation("Cache hit for latest rates with base currency {BaseCurrencyCode}", baseCurrency);
-        }
-
-        return rates;
     }
-
-    public async Task<ValutaCoreResponse> ConvertCurrencyAsync(ExchangeRequest request)
+    
+    private void ValidateConversionRequest(ExchangeRequest request)
     {
         if (request == null)
         {
@@ -78,37 +147,11 @@ public class ValutaService(
 
         if (_restrictedCurrencies.Contains(request.SourceCurrency) || _restrictedCurrencies.Contains(request.TargetCurrency))
         {
-            throw new InvalidOperationException($"Restricted currencies cannot be used in conversion");
+            throw new InvalidOperationException("Restricted currencies cannot be used in conversion");
         }
-
-        var provider = _providerFactory.GetProvider();
-        var cacheKey = CacheKeys.ConversionRate(request.SourceCurrency, request.TargetCurrency);
-
-        if (!_cache.TryGetValue(cacheKey, out ExchangeRateResponse conversionData))
-        {
-            _logger.LogInformation("Cache miss for conversion from {SourceCurrency} to {TargetCurrency}",
-                request.SourceCurrency, request.TargetCurrency);
-            var sourceCurrency = request.SourceCurrency.ToUpperInvariant();
-            var targetCurrency = request.TargetCurrency.ToUpperInvariant();
-            conversionData = await provider.PerformConversionAsync(1, sourceCurrency, targetCurrency);
-
-            _cache.Set(cacheKey, conversionData, TimeSpan.FromHours(1));
-        }
-        else
-        {
-            _logger.LogInformation("Cache hit for conversion from {SourceCurrency} to {TargetCurrency}",
-                request.SourceCurrency, request.TargetCurrency);
-        }
-
-        return _mapper.Map<ValutaCoreResponse>((
-            Source: conversionData,
-            Amount: request.Amount,
-            FromCurrency: request.SourceCurrency,
-            ToCurrency: request.TargetCurrency
-        ));
     }
-
-    public async Task<PaginatedResponse<RateHistoryEntry>> GetHistoricalRatesAsync(HistoricalRatesRequest request)
+    
+    private void ValidateHistoricalRequest(HistoricalRatesRequest request)
     {
         if (request == null)
         {
@@ -129,7 +172,10 @@ public class ValutaService(
         {
             throw new ArgumentException("Start date must be before or equal to end date");
         }
-
+    }
+    
+    private void NormalizeHistoricalRequest(HistoricalRatesRequest request)
+    {
         if (request.Page < 1)
         {
             request.Page = 1;
@@ -139,49 +185,40 @@ public class ValutaService(
         {
             request.PageSize = 10;
         }
-
-        var cacheKey = CacheKeys.HistoricalRates(
-            request.BaseCurrency,
-            request.StartDate.ToString("yyyy-MM-dd"),
-            request.EndDate.ToString("yyyy-MM-dd"));
-
-        if (!_cache.TryGetValue(cacheKey, out Dictionary<DateTime, Dictionary<string, decimal>> historicalData))
+    }
+    
+    private void RemoveRestrictedCurrencies(Dictionary<string, decimal> rates)
+    {
+        foreach (var restrictedCurrency in _restrictedCurrencies)
         {
-            _logger.LogInformation(
-                "Cache miss for historical rates with base currency {BaseCurrencyCode} from {StartDate} to {EndDate}",
-                request.BaseCurrency, request.StartDate.ToString("yyyy-MM-dd"), request.EndDate.ToString("yyyy-MM-dd"));
-
-            var provider = _providerFactory.GetProvider();
-            historicalData =
-                await provider.RetrieveHistoricalRatesAsync(request.BaseCurrency, request.StartDate, request.EndDate);
-
-            _cache.Set(cacheKey, historicalData, TimeSpan.FromHours(24));
+            rates.Remove(restrictedCurrency);
         }
-        else
-        {
-            _logger.LogInformation(
-                "Cache hit for historical rates with base currency {BaseCurrencyCode} from {StartDate} to {EndDate}",
-                request.BaseCurrency, request.StartDate.ToString("yyyy-MM-dd"), request.EndDate.ToString("yyyy-MM-dd"));
-        }
-
-        foreach (var date in historicalData?.Keys!)
+    }
+    
+    private void RemoveRestrictedCurrenciesFromHistoricalData(Dictionary<DateTime, Dictionary<string, decimal>> historicalData)
+    {
+        foreach (var date in historicalData.Keys)
         {
             foreach (var restrictedCurrency in _restrictedCurrencies)
             {
                 historicalData[date].Remove(restrictedCurrency);
             }
         }
-
-        var allRates = historicalData
+    }
+    
+    private List<RateHistoryEntry> ConvertToRateHistoryEntries(
+        Dictionary<DateTime, Dictionary<string, decimal>> historicalData, 
+        string baseCurrency)
+    {
+        return historicalData
             .Select(kvp => new RateHistoryEntry
             {
                 Date = kvp.Key,
-                BaseCurrencyCode = request.BaseCurrency,
+                BaseCurrencyCode = baseCurrency,
                 ExchangeRates = kvp.Value
             })
             .OrderByDescending(r => r.Date)
             .ToList();
-
-        return _mapper.Map<PaginatedResponse<RateHistoryEntry>>((Request: request, AllRates: allRates));
     }
+    #endregion
 }
