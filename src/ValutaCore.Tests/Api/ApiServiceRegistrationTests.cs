@@ -26,26 +26,19 @@ public class ApiServiceRegistrationTests
         // Act
         services.AddApiServices(cfg);
 
-        // Assert – simple count increase
         Assert.True(services.Count > initialCount);
 
-        // Controllers / MVC
         Assert.Contains(services, d => d.ServiceType.FullName?.Contains("Controller") == true);
 
-        // Versioning
         Assert.Contains(services, d => d.ServiceType.FullName?.Contains("ApiVersion") == true);
 
-        // Swagger
         Assert.Contains(services, d => d.ServiceType.FullName?.Contains("Swagger") == true);
 
-        // Auth & JWT
         Assert.Contains(services, d => d.ServiceType.FullName?.Contains("Authentication") == true &&
                                        d.ServiceType.FullName.Contains("Jwt"));
 
-        // MemoryCache
         Assert.Contains(services, d => d.ServiceType.FullName?.Contains("MemoryCache") == true);
 
-        // OpenTelemetry
         Assert.Contains(services, d => d.ServiceType.FullName?.Contains("OpenTelemetry") == true);
     }
 
@@ -92,7 +85,6 @@ public class ApiServiceRegistrationTests
     [Fact]
     public void UseApiMiddleware_ShouldReturnSameBuilder()
     {
-        // Using a real ApplicationBuilder avoids NullReference inside UseMiddleware
         var provider   = new ServiceCollection().BuildServiceProvider();
         var appBuilder = new ApplicationBuilder(provider);
 

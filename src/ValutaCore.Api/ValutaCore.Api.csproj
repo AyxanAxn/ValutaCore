@@ -27,8 +27,6 @@
         <ProjectReference Include="..\ValutaCore.Application\ValutaCore.Application.csproj" />
         <ProjectReference Include="..\ValutaCore.Core\ValutaCore.Core.csproj"/>
         <ProjectReference Include="..\ValutaCore.Infrastructure\ValutaCore.Infrastructure.csproj" />
-        <!--    <ProjectReference Include="..\ValutaCore.Host\ValutaCore.Host.csproj" />-->
-        <!--    <ProjectReference Include="..\ValutaCore.Infrastructure\ValutaCore.Infrastructure.csproj" />-->
     </ItemGroup>
 
     <ItemGroup>

@@ -49,7 +49,6 @@ public class ValutaServiceEdgeCaseTests
     {
         const string usd = "USD";
         _exchangeSourceMock
-            // ← include CancellationToken in the setup
             .Setup(p => p.RetrieveLatestRatesAsync(usd))
             .ThrowsAsync(new HttpRequestException("API unavailable"));
 

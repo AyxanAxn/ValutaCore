@@ -41,7 +41,6 @@ namespace ValutaCore.Tests.Middleware
                 throw new ArgumentException("Invalid argument");
             };
 
-            // Create a new middleware instance with our test delegate
             var middleware = new GlobalErrorMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
 
             // Act
@@ -74,7 +73,6 @@ namespace ValutaCore.Tests.Middleware
                 throw new InputValidationException("Validation failed");
             };
 
-            // Create a new middleware instance with our test delegate
             var middleware = new GlobalErrorMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
 
             // Act
@@ -107,7 +105,6 @@ namespace ValutaCore.Tests.Middleware
                 throw new FormatException("Invalid format");
             };
 
-            // Create a new middleware instance with our test delegate
             var middleware = new GlobalErrorMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
 
             // Act
@@ -184,7 +181,6 @@ namespace ValutaCore.Tests.Middleware
                 PropertyNameCaseInsensitive = true
             });
 
-            // Check that the timestamp is recent (within the last minute)
             var now = DateTime.UtcNow;
             Assert.NotNull(error!.Timestamp);
             var timestampDiff = now - error.Timestamp;

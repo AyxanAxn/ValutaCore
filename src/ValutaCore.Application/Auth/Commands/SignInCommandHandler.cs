@@ -1,3 +1,4 @@
+
 namespace ValutaCore.Application.Auth.Commands;
 
 public class SignInCommandHandler(
@@ -21,7 +22,6 @@ public class SignInCommandHandler(
                 "Failed login attempt for {User} from {Ip} in {Elapsed}ms",
                 cmd.Username, cmd.ClientIp, sw.ElapsedMilliseconds);
 
-            // Throwing causes ApiController to turn it into 401
             throw new AuthenticationException("Invalid credentials");
         }
 

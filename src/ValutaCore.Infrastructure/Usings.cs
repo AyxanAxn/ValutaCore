@@ -15,3 +15,4 @@ global using System.Text.Json;
 global using System.Text;
 global using System.Net;
 global using Polly;
+global using ValutaCore.Infrastructure.Interfaces;

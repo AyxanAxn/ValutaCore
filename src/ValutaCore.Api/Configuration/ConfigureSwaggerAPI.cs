@@ -33,7 +33,7 @@ public static class ConfigureSwagger
                     []
                 }
             });
-            
+
             c.OperationFilter<SecurityRequirementsOperationFilter>();
         });
     }

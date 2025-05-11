@@ -1,9 +1,5 @@
-namespace ValutaCore.Infrastructure.Security;
 
-public interface IJwtTokenService
-{
-    string GenerateToken(string userId, string clientId, IEnumerable<string> roles);
-}
+namespace ValutaCore.Infrastructure.Security;
 
 public class JwtTokenService(IOptions<JwtSettings> jwtSettings) : IJwtTokenService
 {

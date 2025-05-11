@@ -1,5 +1,5 @@
+global using ValutaCore.Infrastructure.Interfaces;
 global using ValutaCore.Application.Currency.DTOs;
-global using ValutaCore.Infrastructure.Security;
 global using ValutaCore.Application.Auth.DTOs;
 global using ValutaCore.Core.Models.Currency;
 global using System.Security.Authentication;

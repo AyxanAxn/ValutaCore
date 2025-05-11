@@ -39,7 +39,6 @@ namespace ValutaCore.Tests.Middleware
                 return Task.CompletedTask;
             };
             
-            // Create a new middleware instance with our test delegate
             var middleware = new RateLimitingMiddleware(next, _memoryCache, _mockLogger.Object, Limit, PeriodInMinutes);
 
             // Act
@@ -58,7 +57,6 @@ namespace ValutaCore.Tests.Middleware
             const string path = "/api/v1/Currency/rates";
             const string cacheKey = $"RateLimit_{clientId}_{path}";
 
-            // Set up the cache to simulate rate limit exceeded
             _memoryCache.Set(cacheKey, Limit, TimeSpan.FromMinutes(1));
 
             var context = new DefaultHttpContext
@@ -85,7 +83,6 @@ namespace ValutaCore.Tests.Middleware
                 return Task.CompletedTask;
             };
             
-            // Create a new middleware instance with our test delegate
             var middleware = new RateLimitingMiddleware(next, _memoryCache, _mockLogger.Object, Limit, PeriodInMinutes);
 
             // Act
@@ -112,7 +109,6 @@ namespace ValutaCore.Tests.Middleware
                 return Task.CompletedTask;
             };
             
-            // Create a new middleware instance with our test delegate
             var middleware = new RateLimitingMiddleware(next, _memoryCache, _mockLogger.Object, Limit, PeriodInMinutes);
 
             // Act
@@ -145,16 +141,13 @@ namespace ValutaCore.Tests.Middleware
                 return Task.CompletedTask;
             };
             
-            // Create a new middleware instance with our counting delegate
             var middleware = new RateLimitingMiddleware(next, _memoryCache, _mockLogger.Object, Limit, PeriodInMinutes);
 
-            // Act - Make 5 requests (below the limit of 100)
             for (int i = 0; i < 5; i++)
             {
                 await middleware.InvokeAsync(context);
             }
 
-            // Assert
             Assert.Equal(5, nextCalled);
             Assert.Equal((int)HttpStatusCode.OK, context.Response.StatusCode);
         }

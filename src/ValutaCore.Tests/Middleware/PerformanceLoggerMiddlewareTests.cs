@@ -29,7 +29,6 @@ namespace CurrencyConverter.Tests.Middleware
                 return Task.CompletedTask;
             };
             
-            // Create a new middleware instance with our test delegate
             var middleware = new PerformanceLoggerMiddleware(next, _mockLogger.Object);
 
             // Act
@@ -64,7 +63,6 @@ namespace CurrencyConverter.Tests.Middleware
                 return Task.CompletedTask;
             };
             
-            // Create a new middleware instance with our test delegate
             var middleware = new PerformanceLoggerMiddleware(next, _mockLogger.Object);
 
             // Act

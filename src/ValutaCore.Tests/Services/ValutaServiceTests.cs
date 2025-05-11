@@ -14,12 +14,10 @@ namespace ValutaCore.Tests.Services
             _mockMapper             = new Mock<IMapper>();
             IMemoryCache cache      = new MemoryCache(new MemoryCacheOptions());
 
-            // 1️⃣ Now mock the parameterless GetProvider()
             mockProviderFactory
                 .Setup(f => f.GetProvider(It.IsAny<string>()))
                 .Returns(_mockProvider.Object);
 
-            // 2️⃣ Seed the “restricted” set with the four codes
             var restricted = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
                 "TRY", "PLN", "THB", "MXN"
@@ -30,7 +28,7 @@ namespace ValutaCore.Tests.Services
                 cache,
                 mockLogger.Object,
                 _mockMapper.Object,
-                restricted   // ← now contains the default blocked currencies
+                restricted
             );
         }
 

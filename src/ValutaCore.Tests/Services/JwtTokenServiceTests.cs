@@ -24,7 +24,6 @@ namespace ValutaCore.Tests
         [Fact]
         public void GenerateToken_ReturnsValidToken()
         {
-            // Arrange
             var userId = "testuser";
             var clientId = "test-client-id";
             var roles = new List<string> { "User", "Admin" };
@@ -40,15 +39,12 @@ namespace ValutaCore.Tests
         [Fact]
         public void GenerateToken_ContainsExpectedClaims()
         {
-            // Arrange
             var userId = "testuser";
             var clientId = "test-client-id";
             var roles = new List<string> { "User", "Admin" };
 
-            // Act
             var token = _jwtTokenService.GenerateToken(userId, clientId, roles);
 
-            // Decode the token to verify claims
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
             var validationParameters = new TokenValidationParameters
@@ -65,7 +61,6 @@ namespace ValutaCore.Tests
 
             var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
 
-            // Assert
             Assert.Equal(userId, principal.FindFirstValue(ClaimTypes.NameIdentifier));
             Assert.Equal(clientId, principal.FindFirstValue("ClientId"));
             Assert.Equal("User", principal.FindFirstValue(ClaimTypes.Role));
@@ -75,7 +70,6 @@ namespace ValutaCore.Tests
         [Fact]
         public void GenerateToken_HasCorrectExpiry()
         {
-            // Arrange
             var userId = "testuser";
             var clientId = "test-client-id";
             var roles = new List<string> { "User" };

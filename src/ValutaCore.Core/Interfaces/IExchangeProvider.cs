@@ -1,5 +1,3 @@
-using ValutaCore.Core.Models.Currency;
-
 namespace ValutaCore.Core.Interfaces;
 
 public interface IExchangeProvider

@@ -37,7 +37,6 @@ public class ValutaService(
         var provider = _providerFactory.GetProvider();
         var fresh = await provider.RetrieveLatestRatesAsync(baseCurrency);
 
-        // remove forbidden codes
         foreach (var code in _restricted)
             fresh.Rates.Remove(code);
 
@@ -110,7 +109,6 @@ public class ValutaService(
             _logger.LogDebug("Cache hit -> {CacheKey}", cacheKey);
         }
 
-        // strip out restricted codes
         foreach (var day in hist.Keys)
         foreach (var code in _restricted)
             hist[day].Remove(code);
